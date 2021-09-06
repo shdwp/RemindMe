@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 using ImGuiNET;
 using RemindMe.Config;
@@ -14,11 +15,14 @@ namespace RemindMe {
             ImGui.SetWindowFontScale(display.TextScale);
 
             var barSize = new Vector2(display.RowSize, ImGui.GetWindowHeight() - ImGui.GetStyle().WindowPadding.Y * 2);
+            var absoluteMax = timerList.Max(t => t.TimerMax);
 
             foreach (var timer in timerList) {
                 var cPosX = ImGui.GetCursorPosX();
                 var cPosY = ImGui.GetCursorPosY();
-                var fraction = (float)(timer.TimerCurrent + display.CacheAge.TotalSeconds) / timer.TimerMax;
+
+                var cooldownRemaining = timer.TimerMax - (float)(timer.TimerCurrent + display.CacheAge.TotalSeconds);
+                var fraction = 1 - cooldownRemaining / (display.UniformDuration ? absoluteMax : timer.TimerMax);
 
                 if (display.LimitDisplayTime && timer.TimerMax > display.LimitDisplayTimeSeconds) {
                     fraction = (float)(display.LimitDisplayTimeSeconds - timer.TimerRemaining + display.CacheAge.TotalSeconds) / display.LimitDisplayTimeSeconds;

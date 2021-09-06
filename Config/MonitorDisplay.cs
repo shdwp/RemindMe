@@ -61,6 +61,7 @@ namespace RemindMe.Config {
 
         public bool OnlyInCombat = true;
         public bool OnlyNotInCombat = false;
+        public bool AlwaysInDuty = true;
         public bool KeepVisibleOutsideCombat = false;
         public int KeepVisibleOutsideCombatSeconds = 15;
 
@@ -83,6 +84,7 @@ namespace RemindMe.Config {
         public bool FillToComplete = false;
         public bool ReverseFill = false;
         public RemindMe.FillDirection IconDisplayFillDirection = RemindMe.FillDirection.FromBottom;
+        public bool UniformDuration = false;
 
         public bool LimitDisplayTime = false;
         public int LimitDisplayTimeSeconds = 10;
@@ -140,6 +142,7 @@ namespace RemindMe.Config {
 
             if ((DisplayType == 1 || DisplayType == 2) && ImGui.Checkbox($"Right to Left##{Guid}", ref DirectionRtL)) mainConfig.Save();
             if ((DisplayType == 0 || DisplayType == 2) && ImGui.Checkbox($"Bottom to Top##{Guid}", ref DirectionBtT)) mainConfig.Save();
+            if ((DisplayType == 0 || DisplayType == 2) && ImGui.Checkbox($"Uniform Fill##{Guid}", ref UniformDuration)) mainConfig.Save();
             if (DisplayType == 2 && ImGui.Checkbox($"Vertical Stack##{Guid}", ref IconVerticalStack)) mainConfig.Save();
 
             ImGui.Separator();
@@ -148,8 +151,7 @@ namespace RemindMe.Config {
             ImGui.Text("Colours");
             ImGui.Separator();
 
-            if (ImGui.ColorEdit4($"Ability Ready##{Guid}", ref AbilityReadyColor)) mainConfig.Save();
-            if (ImGui.ColorEdit4($"Ability Cooldown##{Guid}", ref AbilityCooldownColor)) mainConfig.Save();
+            if (ImGui.ColorEdit4($"Ability Ready##{Guid}", ref AbilityReadyColor)) mainConfig.Save(); if (ImGui.ColorEdit4($"Ability Cooldown##{Guid}", ref AbilityCooldownColor)) mainConfig.Save();
             if (ImGui.ColorEdit4($"Status Effect##{Guid}", ref StatusEffectColor)) mainConfig.Save();
             if (ImGui.ColorEdit4($"Bar Background##{Guid}", ref BarBackgroundColor)) mainConfig.Save();
             if (ImGui.ColorEdit4($"Text##{Guid}", ref TextColor)) mainConfig.Save();
@@ -158,6 +160,10 @@ namespace RemindMe.Config {
             ImGui.Separator();
             ImGui.Text("Display Options");
             ImGui.Separator();
+            if (ImGui.Checkbox($"Always show in Duty##{this.Guid}", ref this.AlwaysInDuty))
+            {
+                mainConfig.Save();
+            }
             if (ImGui.Checkbox($"Hide outside of combat##{this.Guid}", ref this.OnlyInCombat)) {
                 this.OnlyNotInCombat = false;
                 mainConfig.Save();
@@ -203,7 +209,7 @@ namespace RemindMe.Config {
             if (DisplayType < 2 && ImGui.Checkbox($"Reverse fill direction##{this.Guid}", ref this.ReverseFill)) mainConfig.Save();
             if (DisplayType == 2) { 
                 ImGui.BeginGroup();
-                plugin.DrawBar(ImGui.GetCursorScreenPos(), new Vector2(22, 22), 0.45f, IconDisplayFillDirection, new Vector4(0.3f, 0.3f, 0.3f, 1), new Vector4(0.8f, 0.8f, 0.8f, 1), 3); 
+                plugin.DrawBar(ImGui.GetCursorScreenPos(), new Vector2(22, 22), 0.45f,  IconDisplayFillDirection, new Vector4(0.3f, 0.3f, 0.3f, 1), new Vector4(0.8f, 0.8f, 0.8f, 1), 3);
                 ImGui.SameLine();
                 ImGui.Text("Fill Direction");
                 ImGui.EndGroup();

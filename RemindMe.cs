@@ -47,7 +47,7 @@ namespace RemindMe {
         private Hook<UpdateRetainerListDelegate> updateRetainerListHook;
 
         public static ClientInterface Client;
-        
+
         public void Dispose() {
             PluginInterface.UiBuilder.OnOpenConfigUi -= OnOpenConfigUi;
             PluginInterface.UiBuilder.OnBuildUi -= this.BuildUI;
@@ -89,7 +89,7 @@ namespace RemindMe {
             drawConfigWindow = true;
 #endif
             this.PluginInterface = pluginInterface;
-            
+
             LoadConfig();
 
             PluginInterface.Framework.OnUpdateEvent += FrameworkUpdate;
@@ -113,7 +113,7 @@ namespace RemindMe {
             updateRetainerListHook.Enable();
 
             Client = new ClientInterface(pluginInterface.TargetModuleScanner, pluginInterface.Data);
-            
+
             SetupCommands();
         }
 
@@ -130,13 +130,13 @@ namespace RemindMe {
                 if (PluginInterface.ClientState.Condition[ConditionFlag.LoggingOut]) return;
                 if (!PluginInterface.ClientState.Condition.Any()) return;
                 if (PluginInterface.ClientState?.LocalPlayer?.ClassJob == null) return;
-                var inCombat = PluginInterface.ClientState.Condition[ConditionFlag.InCombat];
-                if (OutOfCombatTimer.IsRunning && inCombat) {
+                var inCombatOrInDuty = PluginInterface.ClientState.Condition[ConditionFlag.InCombat] || PluginInterface.ClientState.Condition[ConditionFlag.BoundByDuty];
+                if (OutOfCombatTimer.IsRunning && inCombatOrInDuty) {
                     generalStopwatch.Restart();
                     ActionManager.ResetTimers();
                     OutOfCombatTimer.Stop();
                     OutOfCombatTimer.Reset();
-                } else if (!OutOfCombatTimer.IsRunning && !inCombat) {
+                } else if (!OutOfCombatTimer.IsRunning && !inCombatOrInDuty) {
                     OutOfCombatTimer.Start();
                 }
 
@@ -368,7 +368,8 @@ namespace RemindMe {
             if (PluginConfig.MonitorDisplays.Count == 0) return;
 
             foreach (var display in PluginConfig.MonitorDisplays.Values.Where(d => d.Enabled)) {
-                if (display.Locked && (display.OnlyInCombat || display.OnlyNotInCombat)) {
+                var showDueToDuty = display.AlwaysInDuty && PluginInterface.ClientState.Condition[ConditionFlag.BoundByDuty];
+                if (!showDueToDuty && display.Locked && (display.OnlyInCombat || display.OnlyNotInCombat)) {
                     var inCombat = PluginInterface.ClientState.Condition[ConditionFlag.InCombat];
 
                     if (inCombat && display.OnlyNotInCombat) continue;
@@ -394,7 +395,7 @@ namespace RemindMe {
                 }
 
                 var timerList = display.TimerList ??= GetTimerList(display);
-                
+
                 if (timerList.Count > 0 || !display.Locked) {
 
                     ImGui.SetNextWindowSize(new Vector2(250, 250), ImGuiCond.FirstUseEver);
@@ -436,7 +437,7 @@ namespace RemindMe {
                 }
             }
         }
-        
+
         private void BuildUI() {
             if (PluginInterface.ClientState.Condition[ConditionFlag.LoggingOut]) return;
             if (!PluginInterface.ClientState.Condition.Any()) return;

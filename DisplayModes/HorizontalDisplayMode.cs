@@ -1,18 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using System.Numerics;
+using Dalamud.Interface;
 using ImGuiNET;
 using RemindMe.Config;
 
 namespace RemindMe {
     public partial class RemindMe {
         private void DrawDisplayHorizontal(MonitorDisplay display, List<DisplayTimer> timerList) {
-
             if (display.DirectionBtT) {
                 ImGui.SetCursorPosY(ImGui.GetWindowHeight() - (display.RowSize + ImGui.GetStyle().WindowPadding.Y));
             }
             ImGui.SetWindowFontScale(display.TextScale);
             var barSize = new Vector2(ImGui.GetWindowWidth() - ImGui.GetStyle().WindowPadding.X * 2, display.RowSize);
+            var absoluteMax = timerList.Any() ? timerList.Max(t => t.TimerMax) : 0f;
+
             foreach (var timer in timerList) {
                 var barTopLeft = ImGui.GetCursorScreenPos();
                 var barBottomRight = ImGui.GetCursorScreenPos() + barSize;
@@ -35,7 +39,8 @@ namespace RemindMe {
                 }
                 var cPosY = ImGui.GetCursorPosY();
 
-                var fraction = (float) (timer.TimerCurrent + display.CacheAge.TotalSeconds) / timer.TimerMax;
+                var cooldownRemaining = timer.TimerMax - (float)(timer.TimerCurrent + display.CacheAge.TotalSeconds);
+                var fraction = 1 - cooldownRemaining / (display.UniformDuration ? absoluteMax : timer.TimerMax);
 
                 if (display.LimitDisplayTime && timer.TimerMax > display.LimitDisplayTimeSeconds) {
                     fraction = (float) (display.LimitDisplayTimeSeconds - timer.TimerRemaining + display.CacheAge.TotalSeconds) / display.LimitDisplayTimeSeconds;
@@ -45,7 +50,14 @@ namespace RemindMe {
                     fraction = 1 - fraction;
                 }
 
-                DrawBar(ImGui.GetCursorScreenPos(), barSize, 1 - fraction, display.ReverseFill ? FillDirection.FromRight : FillDirection.FromLeft, GetBarBackgroundColor(display, timer), timer.ProgressColor);
+                DrawBar(
+                    ImGui.GetCursorScreenPos(),
+                    barSize,
+                    1 - fraction,
+                    display.ReverseFill ? FillDirection.FromRight : FillDirection.FromLeft,
+                    GetBarBackgroundColor(display, timer),
+                    timer.ProgressColor
+                );
 
                 var iconSize = new Vector2(display.RowSize) * display.ActionIconScale;
 
@@ -65,7 +77,7 @@ namespace RemindMe {
                                 ImGui.SetCursorPosX(ImGui.GetCursorPosX() + (display.RowSize / 2f) - (displayedIconSize.X / 2));
                             }
 
-                            
+
                             ImGui.Image(icon.ImGuiHandle, displayedIconSize);
                         }
                     }
@@ -77,6 +89,7 @@ namespace RemindMe {
                     var time = Math.Abs(timer.TimerRemaining - display.CacheAge.TotalSeconds);
                     var countdownText = time.ToString(time >= 100 ? "F0" : "F1");
                     var countdownSize = ImGui.CalcTextSize(countdownText);
+                    countdownSize.X *= ImGui.GetIO().FontGlobalScale;
 
                     ImGui.SetCursorPosY(cPosY + (display.RowSize / 2f - countdownSize.Y / 2f));
 
@@ -101,14 +114,14 @@ namespace RemindMe {
                         } else {
                             name += $" on {timer.TargetName}";
                         }
-                        
+
                     }
                     var size = ImGui.CalcTextSize(name);
                     if (display.SkillNameRight) {
                         ImGui.SetCursorPosX(
-                            ImGui.GetWindowWidth() - 
-                            size.X - 
-                            ImGui.GetStyle().WindowPadding.X - 
+                            ImGui.GetWindowWidth() -
+                            size.X -
+                            ImGui.GetStyle().WindowPadding.X -
                             ImGui.GetStyle().FramePadding.X -
                             ((display.ShowActionIcon && display.ReverseSideIcon) || (display.ShowCountdown && !display.ReverseCountdownSide) ? (iconSize.X + ImGui.GetStyle().ItemSpacing.X) : 0)
                             );
